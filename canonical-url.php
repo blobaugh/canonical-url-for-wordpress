@@ -54,7 +54,7 @@ class Canonical_URL {
 
 		$url = esc_url_raw( get_post_meta( $post->ID, 'canonical_url', true ) ); 
 
-		$msg = '<p><i>Contents of this article reposted from <a href="' . $url . '">' . $url . '</a></p>';
+		$msg = '<p><i>Contents of this article reposted from <a href="' . $url . '">' . $url . '</a></i></p>';
 
 		$msg = apply_filters( 'canonical_disclaimer', $msg, $url, $content, $post->ID );
 
