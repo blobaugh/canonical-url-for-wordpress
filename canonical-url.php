@@ -20,7 +20,9 @@ class Canonical_URL {
 		if ( ! is_admin() ) {
 			// Load only on the front
 			add_filter( 'get_canonical_url', [ $this, 'set_head_canonical_url' ], 10, 2 );
+			add_filter( 'wpseo_canonical', [ $this, 'set_wpseo_head_canonical_url' ] );
 			add_filter( 'the_content', [ $this, 'maybe_add_disclaimer' ] );
+			add_filter( 'post_link', [ $this, 'make_permalink_to_canonical' ], 10, 2 );
 		}
 
 		// Hooks that load everywhere
@@ -54,7 +56,7 @@ class Canonical_URL {
 
 		$url = esc_url_raw( get_post_meta( $post->ID, 'canonical_url', true ) ); 
 
-		$msg = '<p><i>Contents of this article reposted from <a href="' . $url . '">' . $url . '</a></p>';
+		$msg = '<p><i>Contents of this article reposted from <a href="' . $url . '">' . $url . '</a></i></p>';
 
 		$msg = apply_filters( 'canonical_disclaimer', $msg, $url, $content, $post->ID );
 
@@ -73,12 +75,31 @@ class Canonical_URL {
 	*/
 	public function set_head_canonical_url( $link, $post ) {
 		$url = get_post_meta( $post->ID, 'canonical_url', true );
-
+		
 		if ( empty( $url ) ) {
 			// No url to change
 			return $link;
 		}
 		return $url;
+	}
+
+	/**
+ 	 * WP SEO will remove WP's default canonical handling. This catches that and 
+ 	 * restores our canonical handling.
+ 	 *
+ 	 * @since May 31, 2020
+ 	 * @param String $url
+ 	 * @return string
+ 	 */
+	public function set_wpseo_head_canonical_url( $url ) {
+		$post_id = url_to_postid( $url );
+		$post = get_post( $post_id );
+		
+		if ( empty( $post ) ) {
+			return $url;
+		}
+
+		return $this->set_head_canonical_url( $url, $post );
 	}
 
 	/**
@@ -135,6 +156,24 @@ class Canonical_URL {
 			// Clear disclaimer flag
 			delete_post_meta( $post_id, 'insert_canonical_disclaimer' );
 		}
+	}
+
+	/**
+	 * Rewrites the permalink for a post to the canonical url.
+	 *
+	 * @since January 19, 2022
+	 * @param string  $permalink The post's permalink.
+	 * @param WP_Post $post      The post in question.
+	 * @return string
+	 */
+	public function make_permalink_to_canonical( $permalink, $post ) {
+		$canonical_url =  get_post_meta( $post->ID, 'canonical_url', true );
+
+		if ( ! empty( $canonical_url ) ) {
+			$permalink = esc_url( $canonical_url );
+		}
+
+		return $permalink;
 	}
 } // end class
 
